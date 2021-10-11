@@ -4,14 +4,24 @@ shortcuts:
   xy_size_precrop: &xy_size_precrop 384
   stride: &stride [1, 250, 250]
 
+# TEmp changes: batch, add HILO, load model, workers
+
 # TODO:
-#  - update stride
+#  - Batch-size and workers
+#  - Firelight
 #  - Ignore label (make sure that cross entropy is correct...)
+#  - Use CrossEntropy instead for more standard method...? (COnsidering that current SD is not the proper class thing I should use)
+
 
 device: cuda
 
 loaders:
   general:
+    dataset_names:
+#      - sandin
+      - HILO
+    #      - NASA
+
     volume_config:
       volume_keys_to_load:
         - raw
@@ -83,13 +93,18 @@ loaders:
       # Sliding window stride
       stride: *stride
       # Data slice to iterate over.
-      data_slice: ':, :, :'
+      data_slice:
+        sandin: '1:'
+        HILO: '6:'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
-        path: '$HCI_HOME/../scratch/datasets/coral_data/Coral Data Sharing/converted_to_hdf5/NASA.h5'
+        path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image'
         dtype: float32
 #        sigma: 0.025
@@ -99,7 +114,10 @@ loaders:
 
       # Segmentation
       GT:
-        path: '$HCI_HOME/../scratch/datasets/coral_data/Coral Data Sharing/converted_to_hdf5/NASA.h5'
+        path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -118,13 +136,18 @@ loaders:
       # Sliding window stride
       stride: *stride
       # Data slice to iterate over.
-      data_slice: '300:, :, :'
+      data_slice:
+        sandin: ':1'
+        HILO: ':6'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
-        path: '$HCI_HOME/../scratch/datasets/coral_data/Coral Data Sharing/converted_to_hdf5/NASA.h5'
+        path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image'
         dtype: float32
         #        sigma: 0.025
@@ -135,7 +158,10 @@ loaders:
 
       # Segmentation
       GT:
-        path: '$HCI_HOME/../scratch/datasets/coral_data/Coral Data Sharing/converted_to_hdf5/NASA.h5'
+        path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -146,12 +172,14 @@ loaders:
 model:
   model_class: confnets.models.MultiScaleInputMultiOutputUNet
   model_kwargs:
+    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/debug_exp/checkpoint.pytorch"
     ndim: 2
     return_input: False
     number_multiscale_inputs: 1
     in_channels: 3
     depth: 4
-    encoder_fmaps: [16, 48, 96, 192, 256]
+    encoder_fmaps: [16, 96, 192, 256, 512]
+    decoder_fmaps: [160, 192, 192, 256, 512]
     upsampling_mode: 'nearest'
 #    return_input: True
     scale_factor: [2, 2]
@@ -163,7 +191,7 @@ model:
       global:
         activation: Softmax
 #        nb_norm_groups: 16
-        out_channels: 20
+        out_channels: 153
       0: {depth: 0}
 #      1: {depth: 1}
 #      2: {depth: 2}
@@ -172,7 +200,7 @@ model:
 
 
 trainer:
-  max_epochs: 999 # basically infinite
+  max_epochs: 9999999 # basically infinite
   num_targets: 1
 
   criterion:
@@ -238,35 +266,32 @@ trainer:
 
 
 
-#firelight:
-#  segm_results_lvl2:
-#    ImageGridVisualizer:
-#
-#      input_mapping:
-#        global: [B: 0, D: "15:20"] # the mapping specified in 'global' is applied to all keys
-#
-#      pad_width: 1  # width of the border between images in pixels
-#      pad_value: .2  # intensity of the border pixels
-#      upsampling_factor: 3  # the whole grid is upsampled by this factor
-#
-#      row_specs: ['H', 'S', 'B', 'C', 'V']
-#      column_specs: ['W', 'D']
-#
-#      visualizers:
-#
-#        - SegmentationVisualizer:
-#            input: ['target', index: 1, C: 0]
-##            background_label: 0
-##        - IdentityVisualizer:
-##            input: ['inputs', C: 0]
-##            cmap: gray
-#        - IdentityVisualizer:
-#            input: ['inputs', index: 1, C: 1]
+firelight:
+  segm_results:
+    ImageGridVisualizer:
+
+      input_mapping:
+        global: [B: 0] # the mapping specified in 'global' is applied to all keys
+
+      pad_width: 1  # width of the border between images in pixels
+      pad_value: .2  # intensity of the border pixels
+      upsampling_factor: 3  # the whole grid is upsampled by this factor
+
+      row_specs: ['H', 'S', 'B', 'C', 'V']
+      column_specs: ['W']
+
+      visualizers:
+
+        - SegmentationVisualizer:
+            input: ['target', index: 0]
+            background_label: 0
+        - RGBVisualizer:
+            input: ['inputs', index: 0]
 #            cmap: gray
-#        - IdentityVisualizer:
-#            input: ['prediction', index: 1, C: ":"]
-#            cmap: gray
-#            value_range: [0,1]
+        - IdentityVisualizer:
+            input: ['prediction', index: 0, C: "0"]
+            cmap: gray
+            value_range: [0,1]
 #
 #  segm_results:
 #    ImageGridVisualizer:

@@ -7,25 +7,26 @@ from PIL import Image
 from segmfriends.utils.various import writeHDF5, check_dir_and_create
 import vigra
 
-
+# TODO: make as script argument
+RELABEL_CONSECUTIVE = True
 
 datasets = {
     "HILO": {'root-raw': "UH Hilo -- John Burns",
              "raw_data_type": "_plot.jpg",
              'root-labels': "recolored_annotations/BW/UH_HILO",
              "labels_type": "_annotation.png"},
-    "sandin": {'root-raw': "Sandin_SIO",
-             "raw_data_type": ".jpg",
-             'root-labels': "recolored_annotations/BW/Sandin-SIO",
-             "labels_type": "_annotation.jpg"},
+    # "sandin": {'root-raw': "Sandin_SIO",
+    #          "raw_data_type": ".jpg",
+    #          'root-labels': "recolored_annotations/BW/Sandin-SIO",
+    #          "labels_type": "_annotation.jpg"},
     # "NOAA": {'root-raw': "???", # FIXME: where is it...?
     #          "raw_data_type": "???",
     #          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
     #          "labels_type": "_annotation.png"},
-    "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
-             "raw_data_type": ".png",
-             'root-labels': "recolored_annotations/BW/NASA-AlanLi",
-             "labels_type": "_annotation.png"},
+    # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
+    #          "raw_data_type": ".png",
+    #          'root-labels': "recolored_annotations/BW/NASA-AlanLi",
+    #          "labels_type": "_annotation.png"},
 
 }
 
@@ -134,16 +135,24 @@ for data_name in datasets:
     number_labels = (bincount > 0).sum()
     print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
 
-    # Relabel labels consectuively to reduce size of output CNN layer
-    # FIXME: problem is that then labels across datasets are no longer consistent
-    combined_annotations, max_label, _ = vigra.analysis.relabelConsecutive(combined_annotations)
-    print("Max label for dataset {}: {}".format(data_name, max_label))
-
     # TODO: for NASA dataset, set label 108 to background or ignore label
     # combined_annotations[combined_annotations == 108] = 0
 
-    # Write outputs:
-    writeHDF5(combined_raw, os.path.join(out_dir, "{}.h5".format(data_name)), "image")
-    writeHDF5(combined_annotations, os.path.join(out_dir, "{}.h5".format(data_name)), "labels")
+    # Relabel labels consectuively to reduce size of output CNN layer
+    # FIXME: problem is that then labels across datasets are no longer consistent
+    if RELABEL_CONSECUTIVE:
+        combined_annotations, max_label, mapping = vigra.analysis.relabelConsecutive(combined_annotations)
+        print("Max label for dataset {}: {}".format(data_name, max_label))
+        print(mapping)
+
+        # Write outputs:
+        writeHDF5(combined_raw, os.path.join(out_dir, "{}_consecutive.h5".format(data_name)), "image")
+        writeHDF5(combined_annotations, os.path.join(out_dir, "{}_consecutive.h5".format(data_name)), "labels")
+    else:
+        # Write outputs:
+        writeHDF5(combined_raw, os.path.join(out_dir, "{}.h5".format(data_name)), "image")
+        writeHDF5(combined_annotations, os.path.join(out_dir, "{}.h5".format(data_name)), "labels")
+
+
 
 #

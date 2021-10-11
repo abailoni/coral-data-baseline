@@ -1,9 +1,6 @@
 import sys
 import os
 
-from pathutils import change_paths_config_file, get_home_dir
-
-# --------------------------------
 
 import sys
 from copy import deepcopy
@@ -26,7 +23,7 @@ from speedrun.py_utils import create_instance
 
 from segmfriends.utils.config_utils import recursive_dict_update
 
-from segmfriends.datasets.mutli_scale import MultiScaleDataset
+from segmfriends.datasets.mutli_scale import MultiScaleDataset, MultiScaleDatasets
 
 
 # torch.backends.cudnn.deterministic = True
@@ -43,7 +40,7 @@ class BaseBatterySegmExperiment(BaseExperiment, InfernoMixin, TensorboardMixin):
 
 
         self.DEFAULT_DISPATCH = 'train'
-        self.auto_setup()
+        self.auto_setup(update_git_revision=False)
 
         # register_logger(FirelightLogger, "image")
         register_logger(self, 'scalars')
@@ -116,23 +113,23 @@ class BaseBatterySegmExperiment(BaseExperiment, InfernoMixin, TensorboardMixin):
 
     def set_devices(self):
         # # --------- In case of multiple GPUs: ------------
-        # n_gpus = torch.cuda.device_count()
-        # gpu_list = range(n_gpus)
-        # self.set("gpu_list", gpu_list)
-        # self.trainer.cuda(gpu_list)
+        n_gpus = torch.cuda.device_count()
+        gpu_list = range(n_gpus)
+        self.set("gpu_list", gpu_list)
+        self.trainer.cuda(gpu_list)
 
         # --------- Debug on trendytukan, force to use only GPU 0: ------------
-        self.set("gpu_list", [0])
-        self.trainer.cuda([0])
+        # self.set("gpu_list", [0])
+        # self.trainer.cuda([0])
 
     def build_train_loader(self):
         kwargs = recursive_dict_update(self.get('loaders/train'), deepcopy(self.get('loaders/general')))
-        datasets = MultiScaleDataset.from_config(kwargs)
+        datasets = MultiScaleDatasets.from_config(kwargs)
         return DataLoader(datasets, **kwargs.get("loader_config", {}))
 
     def build_val_loader(self):
         kwargs = recursive_dict_update(self.get('loaders/val'), deepcopy(self.get('loaders/general')))
-        datasets = MultiScaleDataset.from_config(kwargs)
+        datasets = MultiScaleDatasets.from_config(kwargs)
         return DataLoader(datasets, **kwargs.get("loader_config", {}))
 
 
@@ -143,32 +140,32 @@ if __name__ == '__main__':
     config_path = os.path.join(source_path, 'configs')
     experiments_path = os.path.join(source_path, 'runs')
 
-    # Update HCI_HOME paths:
-    for i, key in enumerate(sys.argv):
-        if "HCI__HOME" in sys.argv[i]:
-            sys.argv[i] = sys.argv[i].replace("HCI__HOME/", get_home_dir())
-
-    # Update RUNS paths:
-    for i, key in enumerate(sys.argv):
-        if "RUNS__HOME" in sys.argv[i]:
-            sys.argv[i] = sys.argv[i].replace("RUNS__HOME", experiments_path)
+    # # Update HCI_HOME paths:
+    # for i, key in enumerate(sys.argv):
+    #     if "HCI__HOME" in sys.argv[i]:
+    #         sys.argv[i] = sys.argv[i].replace("HCI__HOME/", get_home_dir())
+    #
+    # # Update RUNS paths:
+    # for i, key in enumerate(sys.argv):
+    #     if "RUNS__HOME" in sys.argv[i]:
+    #         sys.argv[i] = sys.argv[i].replace("RUNS__HOME", experiments_path)
 
 
     sys.argv[1] = os.path.join(experiments_path, sys.argv[1])
     if '--inherit' in sys.argv:
         i = sys.argv.index('--inherit') + 1
         if sys.argv[i].endswith(('.yml', '.yaml')):
-            sys.argv[i] = change_paths_config_file(os.path.join(config_path, sys.argv[i]))
+            sys.argv[i] = os.path.join(config_path, sys.argv[i])
         else:
             sys.argv[i] = os.path.join(experiments_path, sys.argv[i])
     if '--update' in sys.argv:
         i = sys.argv.index('--update') + 1
-        sys.argv[i] = change_paths_config_file(os.path.join(config_path, sys.argv[i]))
+        sys.argv[i] = os.path.join(config_path, sys.argv[i])
     i = 0
     while True:
         if f'--update{i}' in sys.argv:
             ind = sys.argv.index(f'--update{i}') + 1
-            sys.argv[ind] = change_paths_config_file(os.path.join(config_path, sys.argv[ind]))
+            sys.argv[ind] = os.path.join(config_path, sys.argv[ind])
             i += 1
         else:
             break

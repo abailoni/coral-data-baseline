@@ -1,0 +1,389 @@
+shortcuts:
+  z_size: &z_size 1
+#  xy_size: &xy_size
+  xy_size_precrop: &xy_size_precrop 512
+  stride: &stride [1, 480, 480]
+
+# TEmp changes:  crops
+
+# TODO:
+#  - Batch-size and workers
+#  - Firelight
+#  - Ignore label (make sure that cross entropy is correct...)
+#  - Use CrossEntropy instead for more standard method...? (COnsidering that current SD is not the proper class thing I should use)
+
+
+device: cuda
+
+loaders:
+  general:
+    dataset_names:
+#      - sandin
+      - HILO
+    #      - NASA
+
+    volume_config:
+      volume_keys_to_load:
+        - raw
+        - GT
+
+    # Configuration for the master dataset.
+    transform_config:
+      # We might need order 0 interpolation if we have segmentation in there somewhere.
+#      elastic_transform:
+#        apply: False
+#        alpha: 2000.
+#        sigma: 50.
+#        order: 0
+
+      random_flip: True
+      convert_batch_to_2D: True
+
+#      crop_after_target:
+#        crop_left: [20, 20, 20]
+#        crop_right: [20, 20, 20]
+
+#      downscale_and_crop:
+#        # Inputs:
+##        - {ds_factor: [1, 1, 1],
+##          crop_factor: [2, 4, 4],
+##          apply_to: 0}
+#        - {ds_factor: [2, 2, 2],
+#          crop_factor: [1, 2, 2],
+#          apply_to: 0}
+#        - {ds_factor: [4, 4, 4],
+#          crop_factor: [1, 1, 1],
+#          apply_to: 0}
+#        # Targets:
+##        - {ds_factor: [1, 1, 1],
+##          crop_factor: [2, 4, 4],
+##          apply_to: 1}
+#        - {ds_factor: [2, 2, 2],
+#          crop_factor: [1, 2, 2],
+#          apply_to: 1}
+#        - {ds_factor: [4, 4, 4],
+#          crop_factor: [1, 1, 1],
+#          apply_to: 1}
+
+
+    # Specify configuration for the loader
+    loader_config:
+      # Number of processes to use for loading data. Set to (say) 10 if you wish to
+      # use 10 CPU cores, or to 0 if you wish to use the same process for training and
+      # data-loading (generally not recommended).
+      batch_size: 11
+      num_workers: 14
+      drop_last: True
+      pin_memory: False
+      shuffle: True
+
+
+
+
+
+  train:
+    # Specify how the data needs to be sliced before feeding to the network.
+    # We use a 3D sliding window over the dataset to extract patches, which
+    # are then fed to the network as batches.
+    slicing_config:
+      # Sliding window size
+      window_size:
+        - *z_size
+        - *xy_size_precrop
+        - *xy_size_precrop
+      # Sliding window stride
+      stride: *stride
+      # Data slice to iterate over.
+      data_slice:
+        sandin: '1:'
+        HILO: '4:'
+
+    # Specify paths to volumes
+    volume_config:
+      # Raw data
+      raw:
+        path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
+        path_in_file: 'image'
+        dtype: float32
+#        sigma: 0.025
+#        padding_mode: "reflect"
+#        padding: &dataset_padding [[100,100], [100,100], [100,100]]
+        is_multichannel: True
+
+      # Segmentation
+      GT:
+        path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
+        path_in_file: 'labels'
+        dtype: int64
+        label_volume: False
+#        padding_mode: "constant"
+#        padding: *dataset_padding
+#        is_multichannel: True
+
+
+  val:
+    slicing_config:
+      # Sliding window size
+      window_size:
+        - *z_size
+        - *xy_size_precrop
+        - *xy_size_precrop
+      # Sliding window stride
+      stride: *stride
+      # Data slice to iterate over.
+      data_slice:
+        sandin: ':1'
+        HILO: ':4'
+
+    # Specify paths to volumes
+    volume_config:
+      # Raw data
+      raw:
+        path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
+        path_in_file: 'image'
+        dtype: float32
+        #        sigma: 0.025
+#        padding_mode: "reflect"
+#        padding: *dataset_padding
+        is_multichannel: True
+
+
+      # Segmentation
+      GT:
+        path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
+        path_in_file: 'labels'
+        dtype: int64
+        label_volume: False
+#        padding_mode: "constant"
+#        padding: *dataset_padding
+#        is_multichannel: True
+
+model:
+  model_class: confnets.models.MultiScaleInputMultiOutputUNet
+  model_kwargs:
+#    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/debug_exp/checkpoint.pytorch"
+    ndim: 2
+    return_input: False
+    number_multiscale_inputs: 1
+    in_channels: 3
+    depth: 4
+    encoder_fmaps: [16, 64, 192, 256, 512]
+    decoder_fmaps: [32, 64, 192, 256, 512]
+    upsampling_mode: 'nearest'
+#    return_input: True
+    scale_factor: [2, 2]
+#    decoder_crops: # Crops AFTER the res_blocks at each level (at zero, we crop at the end)
+#      0: ":, 8:-8, 8:-8"
+#      1: ":, 4:-4, 4:-4"
+#      2: ":, 2:-2, 2:-2"
+    output_branches_specs:
+      global:
+        activation: Softmax
+#        nb_norm_groups: 16
+        out_channels: 32
+      0: {depth: 0}
+#      1: {depth: 1}
+#      2: {depth: 2}
+
+
+
+
+trainer:
+  max_epochs: 9999999 # basically infinite
+  num_targets: 1
+
+  criterion:
+    loss_name: "segmfriends.utils.losses.LabelTargetSorensenDiceLoss2D"
+    kwargs: {}
+#      weight:
+#        - 0.2543359610156066
+#        - 0.1924571980823051
+#        - 0.18699410925388626
+#        - 0.366212731648202
+#      weight:
+#        - 3.931807346
+#        - 5.195960504
+#        - 5.347762044
+#        - 2.730653289
+#    transforms:
+#      - neurofire.criteria.loss_transforms.RemoveSegmentationFromTarget: {}
+#      - segmfriends.transform.volume.ApplyAndRemoveMask: {first_invert_target: True}
+
+  optimizer:
+    Adam:
+      lr: 0.0001
+      weight_decay: 0.0005
+      amsgrad: True
+#      betas: [0.9, 0.999]
+
+  intervals:
+    save_every: [1000, 'iterations']
+    validate_every:
+      frequency : [100, 'iterations']
+      for_num_iterations: 5
+
+  tensorboard:
+    log_scalars_every: [1, 'iterations']
+    log_images_every: [400, 'iterations']
+    log_histograms_every: 'never'
+    send_image_at_batch_indices: [0]
+    send_image_at_channel_indices: [0]
+
+  callbacks:
+#    gradients:
+#      LogOutputGradients:
+#        frequency: 1
+
+    essentials:
+      SaveAtBestValidationScore:
+        smoothness: 0
+        verbose: True
+      GarbageCollection: {}
+#      GradientClip:
+#        clip_value: 1e-3
+
+    scheduling:
+      AutoLR:
+        monitor: 'validation_loss'
+        factor: 0.99
+        patience: '100 iterations'
+        monitor_while: 'validating'
+        monitor_momentum: 0.75
+#        cooldown_duration: '50000 iterations'
+        consider_improvement_with_respect_to: 'previous'
+        verbose: True
+
+
+
+firelight:
+  segm_results:
+    ImageGridVisualizer:
+
+      input_mapping:
+        global: [B: ":3"] # the mapping specified in 'global' is applied to all keys
+
+      pad_width: 1  # width of the border between images in pixels
+      pad_value: .2  # intensity of the border pixels
+      upsampling_factor: 1  # the whole grid is upsampled by this factor
+
+      row_specs: ['H', 'S', 'B']
+      column_specs: ['W', 'C', 'V']
+
+      visualizers:
+
+        - SegmentationVisualizer:
+            input: ['target', index: 0]
+            background_label: 0
+#            cmap: "hsv"
+#            value_range: [0,36.]
+#            color_dict:
+#              0: [0, 0, 0]
+#              1: [1, 1, 1]
+#              2: [2, 2, 2]
+#              3: [3, 3, 3]
+#              4: [4, 4, 4]
+#              5: [5, 5, 5]
+#              6: [6, 6, 6]
+#              7: [7, 7, 7]
+#              8: [8, 8, 8]
+#              9: [9, 9, 9]
+#              10: [10, 10, 10]
+#              11: [11, 11, 11]
+#              12: [12, 12, 12]
+#              13: [13, 13, 13]
+#              14: [14, 14, 14]
+#              15: [15, 15, 15]
+#              16: [16, 16, 16]
+#              17: [17, 17, 17]
+#              18: [18, 18, 18]
+#              19: [19, 19, 19]
+#              20: [20, 20, 20]
+#              21: [21, 21, 21]
+#              22: [22, 22, 22]
+#              23: [23, 23, 23]
+#              24: [24, 24, 24]
+#              25: [25, 25, 25]
+#              26: [26, 26, 26]
+#              27: [27, 27, 27]
+#              28: [28, 28, 28]
+#              29: [29, 29, 29]
+#              30: [30, 30, 30]
+#              31: [31, 31, 31]
+#              32: [32, 32, 32]
+
+        - RGBVisualizer:
+            input: ['inputs', index: 0]
+#            cmap: gray
+        - IdentityVisualizer:
+            input: ['prediction', index: 0, C: ":4"]
+            cmap: gray
+            value_range: [0,1]
+
+  softmax_preds:
+    ImageGridVisualizer:
+
+      input_mapping:
+        global: [B: ":3"] # the mapping specified in 'global' is applied to all keys
+
+      pad_width: 1  # width of the border between images in pixels
+      pad_value: .2  # intensity of the border pixels
+      upsampling_factor: 1  # the whole grid is upsampled by this factor
+
+      row_specs: ['H', 'S', 'B']
+      column_specs: ['W', 'C', 'V']
+
+      visualizers:
+
+        - SegmentationVisualizer:
+            input: ['target', index: 0]
+            background_label: 0
+        - RGBVisualizer:
+            input: ['inputs', index: 0]
+#            cmap: gray
+        - IdentityVisualizer:
+            input: ['prediction', index: 0, C: ":"]
+            cmap: gray
+            value_range: [0,1]
+
+
+#
+#  segm_results:
+#    ImageGridVisualizer:
+#
+#      input_mapping:
+#        global: [B: 0, D: "30:36"] # the mapping specified in 'global' is applied to all keys
+#
+#      pad_width: 1  # width of the border between images in pixels
+#      pad_value: .2  # intensity of the border pixels
+#      upsampling_factor: 3  # the whole grid is upsampled by this factor
+#
+#      row_specs: ['H', 'S', 'B', 'C', 'V']
+#      column_specs: ['W', 'D']
+#
+#      visualizers:
+#
+#        - SegmentationVisualizer:
+#            input: ['target', index: 0, C: 0]
+##            background_label: 0
+##        - IdentityVisualizer:
+##            input: ['inputs', C: 0]
+##            cmap: gray
+#        - IdentityVisualizer:
+#            input: ['inputs', index: 0, C: 1]
+#            cmap: gray
+#        - IdentityVisualizer:
+#            input: ['prediction', index: 0, C: ":"]
+#            cmap: gray
+#            value_range: [0,1]
