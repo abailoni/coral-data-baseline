@@ -1,0 +1,3 @@
+model:
+  model_kwargs:
+    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/HILO_05x_v1_trainSplit_part2/checkpoint.pytorch"
