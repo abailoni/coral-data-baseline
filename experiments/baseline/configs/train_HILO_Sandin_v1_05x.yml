@@ -89,14 +89,14 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: '1:'
-        HILO: '4:'
+        HILO: ':26'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
 #          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image'
@@ -109,7 +109,7 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
 #          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
@@ -132,14 +132,14 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: ':1'
-        HILO: ':4'
+        HILO: '26:30'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
 #          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image'
@@ -153,7 +153,7 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO_consecutive.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
 #          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
@@ -166,7 +166,7 @@ loaders:
 model:
   model_class: confnets.models.MultiScaleInputMultiOutputUNet
   model_kwargs:
-    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/HILO_05x_v1/checkpoint.pytorch"
+    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/HILO_05x_v1_trainSplit/checkpoint.pytorch"
     ndim: 2
     return_input: False
     number_multiscale_inputs: 1
@@ -229,7 +229,7 @@ trainer:
 
   tensorboard:
     log_scalars_every: [1, 'iterations']
-    log_images_every: [400, 'iterations']
+    log_images_every: [600, 'iterations']
     log_histograms_every: 'never'
     send_image_at_batch_indices: [0]
     send_image_at_channel_indices: [0]

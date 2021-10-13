@@ -4,9 +4,13 @@ import h5py
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
-from segmfriends.utils.various import writeHDF5, check_dir_and_create, writeHDF5attribute
+from segmfriends.utils.various import writeHDF5, check_dir_and_create
 import vigra
 import pandas as pd
+
+"""
+Old version of the script that looks at all images in the directory, instead of relying on list of images
+"""
 
 # TODO: make as script argument
 RELABEL_CONSECUTIVE = True
@@ -48,11 +52,13 @@ for data_name in datasets:
     images_info = pd.read_csv(data_info["images_info"])
     images_info = images_info.sort_values(by=['split'], ascending=False, na_position='first')
 
-    images_info.loc[images_info["split"].isna(), "split"] = "train"
-    split_counts = images_info["split"].value_counts()
+
 
     train_val_split = images_info["split"]
     image_names = images_info.iloc[:, 0]
+
+    print("done")
+
 
     # Directories:
     data_dir = os.path.join(original_data_dir, data_info["root-raw"])
@@ -61,59 +67,54 @@ for data_name in datasets:
     # Collect sizes and names of all images in folder:
     images_collected = []
     max_shape = None
-    for file, split in zip(image_names, train_val_split):
-        if data_name == "sandin":
-            raise NotImplementedError
-            # if data_name == "sandin" and file.endswith("_mask.jpg"):
-            #     # In this data raw images do not have a unique identifier, so we need to
-            #     # manually ignore masks:
-            #     continue
+    for (dirpath, dirnames, filenames) in os.walk(data_dir):
+        for file in filenames:
+            if file.endswith(data_info["raw_data_type"]):
+                if data_name == "sandin" and file.endswith("_mask.jpg"):
+                    # In this data raw images do not have a unique identifier, so we need to
+                    # manually ignore masks:
+                    continue
 
-        # add extension and filename ending:
-        file = file + data_info["raw_data_type"]
+                # Check shape of image:
+                image = np.asarray(Image.open(os.path.join(dirpath, file)))
+                # Load the associated annotations:
+                annotation_filename = file.replace(data_info["raw_data_type"], data_info["labels_type"])
+                annotation_path = os.path.join(labels_dir, annotation_filename)
+                if not os.path.exists(annotation_path):
+                    print("!!! Attention, annotation file for {} does not exist!".format(file))
+                    continue
 
+                new_image_data = {}
+                new_image_data['root'] = dirpath
+                new_image_data['img_path'] = os.path.join(dirpath, file)
+                new_image_data['ann_path'] = annotation_path
 
-        # Check shape of image:
-        image = np.asarray(Image.open(os.path.join(data_dir, file)))
-        # Load the associated annotations:
-        annotation_filename = file.replace(data_info["raw_data_type"], data_info["labels_type"])
-        annotation_path = os.path.join(labels_dir, annotation_filename)
-        if not os.path.exists(annotation_path):
-            print("!!! Attention, annotation file for {} does not exist!".format(file))
-            raise NotImplementedError("Train/val/test split does not support this. All images listed in csv should exist.")
-            continue
+                img = Image.open(os.path.join(dirpath, file))
+                img_shape = img.size[:2]
 
-        new_image_data = {}
-        new_image_data['root'] = data_dir
-        new_image_data['img_path'] = os.path.join(data_dir, file)
-        new_image_data['ann_path'] = annotation_path
+                annotations = Image.open(annotation_path)
+                ann_shape = annotations.size[:2]
 
-        img = Image.open(os.path.join(data_dir, file))
-        img_shape = img.size[:2]
+                assert img_shape == ann_shape, "Annotations and image do not match! {}".format(file)
 
-        annotations = Image.open(annotation_path)
-        ann_shape = annotations.size[:2]
+                if max_shape is None:
+                    max_shape = img_shape
+                    new_image_data['rotate_image'] = False
+                else:
+                    max_shape_diff = [0 if max_shp >= img_shape[i] else (img_shape[i] - max_shp) for i, max_shp in
+                                      enumerate(max_shape)]
+                    # Now try by rotating image:
+                    max_shape_diff_rot = [0 if max_shp >= img_shape[1-i] else (img_shape[1-i] - max_shp) for i, max_shp in
+                                     enumerate(max_shape)]
+                    # Check which one requires less padding:
+                    diff, diff_rot = np.array(max_shape_diff).sum(), np.array(max_shape_diff_rot).sum()
+                    new_image_data['rotate_image'] = rotate_image = diff_rot < diff
 
-        assert img_shape == ann_shape, "Annotations and image do not match! {}".format(file)
+                    selected_diff = max_shape_diff_rot if rotate_image else max_shape_diff
+                    # Now update the maximum shape:
+                    max_shape = [dif + max_shp  for max_shp, dif in zip(max_shape, selected_diff)]
 
-        if max_shape is None:
-            max_shape = img_shape
-            new_image_data['rotate_image'] = False
-        else:
-            max_shape_diff = [0 if max_shp >= img_shape[i] else (img_shape[i] - max_shp) for i, max_shp in
-                              enumerate(max_shape)]
-            # Now try by rotating image:
-            max_shape_diff_rot = [0 if max_shp >= img_shape[1-i] else (img_shape[1-i] - max_shp) for i, max_shp in
-                             enumerate(max_shape)]
-            # Check which one requires less padding:
-            diff, diff_rot = np.array(max_shape_diff).sum(), np.array(max_shape_diff_rot).sum()
-            new_image_data['rotate_image'] = rotate_image = diff_rot < diff
-
-            selected_diff = max_shape_diff_rot if rotate_image else max_shape_diff
-            # Now update the maximum shape:
-            max_shape = [dif + max_shp  for max_shp, dif in zip(max_shape, selected_diff)]
-
-        images_collected.append(new_image_data)
+                images_collected.append(new_image_data)
 
     assert len(images_collected) > 0, "No images found for dataset {}!".format(data_name)
     # Loading image in numpy inverts x and y, so invert max_shape:
@@ -153,38 +154,23 @@ for data_name in datasets:
     number_labels = (bincount > 0).sum()
     print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
 
-    if data_name == "NASA":
-        # FIXME: for NASA dataset, set label 108 to background or ignore label
-        raise NotImplementedError()
-        # combined_annotations[combined_annotations == 108] = 0
+    # TODO: for NASA dataset, set label 108 to background or ignore label
+    # combined_annotations[combined_annotations == 108] = 0
 
     # Relabel labels consectuively to reduce size of output CNN layer
-    # TODO: problem is that then labels across datasets are no longer consistent
+    # FIXME: problem is that then labels across datasets are no longer consistent
     if RELABEL_CONSECUTIVE:
-        labels_colors.insert(5, "contiguous", "")
         combined_annotations, max_label, mapping = vigra.analysis.relabelConsecutive(combined_annotations)
         print("Max label for dataset {}: {}".format(data_name, max_label))
-        for orig_label, new_label in mapping.items():
-            labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
+        print(mapping)
+
+        # Write outputs:
+        writeHDF5(combined_raw, os.path.join(out_dir, "{}_consecutive.h5".format(data_name)), "image")
+        writeHDF5(combined_annotations, os.path.join(out_dir, "{}_consecutive.h5".format(data_name)), "labels")
     else:
-        labels_colors.insert(5, "contiguous", labels_colors["BW"])
-
-    # Write outputs:
-    hdf5_path = os.path.join(out_dir, "{}.h5".format(data_name))
-    writeHDF5(combined_raw, hdf5_path, "image")
-    writeHDF5(combined_annotations, hdf5_path, "labels")
-
-    # Write split info
-    for split_type, count in split_counts.items():
-        print(split_type, count)
-        writeHDF5attribute(attribute_data=count,attriribute_name="nb_img_{}".format(split_type),
-                           file_path=hdf5_path, inner_path_dataset="image")
-
-    # Write csv files:
-    labels_colors.to_csv(hdf5_path.replace(".h5", "_labels.csv"))
-    images_info.to_csv(hdf5_path.replace(".h5", "_images_info.csv"))
-
-
+        # Write outputs:
+        writeHDF5(combined_raw, os.path.join(out_dir, "{}.h5".format(data_name)), "image")
+        writeHDF5(combined_annotations, os.path.join(out_dir, "{}.h5".format(data_name)), "labels")
 
 
 

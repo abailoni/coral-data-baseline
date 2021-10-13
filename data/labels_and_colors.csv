@@ -1,0 +1,115 @@
+label,R,G,B,BW
+a. cythera,67,12,140,1
+brown algae,77,125,114,2
+tubastrea,87,71,52,3
+70/30 cca + turf,97,44,216,4
+cca,107,16,15,5
+"p. duerdeni, porites duerdeni",117,47,111,6
+a. nasuta,127,119,13,7
+favia_submassive,137,101,214,8
+montastraeidae,147,112,229,9
+sinularia,157,142,3,10
+seagrass,167,81,216,11
+siderastreidae,177,174,142,12
+acropora_table,187,79,110,13
+merulinidae,197,172,52,14
+"green algae, green mac algae",207,47,194,15
+fungia_single,217,49,183,16
+p. maldivensis,227,176,135,17
+cryptodendrum,237,22,235,18
+acropora_corymbose,247,63,193,19
+p. lutea,1,40,150,20
+psammocora,11,185,98,21
+leptastrea,21,35,23,22
+p. brigami,31,116,148,23
+halimeda opuntia,41,40,119,24
+hydnophora_microconos,51,51,194,25
+gorgoniidae,61,142,232,26
+pocillopora_zelli,71,186,83,27
+"montipora, montipora sp.",81,189,181,28
+flavia_matthai,91,107,136,29
+bare substratum,101,36,87,30
+halimeda taenicola,111,125,83,31
+unknow_crust,121,236,194,32
+agariciidae,131,138,112,33
+"m. capitata, montipora capitata, montipora_capitata, montipora_crust/patula",141,166,28,34
+a. gemmifera,151,117,16,35
+"porites, porites sp.",161,161,205,36
+"montipora patula, m. patula",171,137,33,37
+galaxaura,181,108,161,38
+porites_branching,191,108,255,39
+"p. compressa, porites compressa",201,202,234,40
+tubinaria,211,73,135,41
+30/70 cca + turf,221,71,126,42
+red algae,231,134,219,43
+l. purpurea,241,204,185,44
+montastrea,251,112,70,45
+alcyoniidae,5,252,46,46
+c. ocellina,15,24,56,47
+corallimorph/urchin,25,78,81,48
+p. evermanii,35,216,32,49
+cavularia,45,197,195,50
+dead coral,55,239,128,51
+fungiidae,65,5,58,52
+halimeda fragilis,75,136,174,53
+fungia_multiple,85,57,150,54
+p. stellata,95,222,80,55
+other,105,232,1,56
+"p. lobata, porites lobata",115,134,256,57
+leptoseris,125,91,54,58
+astreopora,135,152,101,59
+favites_submassive,145,78,191,60
+plexauridae,155,82,0,61
+"m. flabellata, m. flabalata, montipora flabellata, montipora_plate/flabellata",165,165,250,62
+palythoa spp.,175,9,57,63
+pavona_cactus,185,185,157,64
+acroporidae,195,122,29,65
+"p. grandis, pocillipora eydouxi, pocillopora_eydouxi",205,123,40,66
+dictyophaeria,215,43,248,67
+"p. damicornis, pocillipora damicornis, pocillopora_damicornis",225,35,64,68
+avrainvillea,235,65,243,69
+mangrove,245,84,135,70
+stylophora,255,216,108,71
+pavona duerdeni,9,102,159,72
+turf,19,204,191,73
+quadrat perimeter,29,224,231,74
+cca other,39,61,126,75
+diplosoma,49,115,32,76
+mussidae,59,173,10,77
+sea star,69,117,112,78
+favites_crust,79,3,36,79
+p. lichen,89,30,117,80
+sarcophyton,99,34,16,81
+p. ligulata,109,169,36,82
+pocilloporidae,119,121,142,83
+platgyra,129,248,109,84
+50/50 cca + turf,139,67,242,85
+poritidae,149,124,242,86
+invertebrate,159,208,97,87
+acropora_branching,169,48,49,88
+hydnophora_exesa,179,220,181,89
+porite_massive,189,216,210,90
+a. paniculata,199,239,27,91
+hydnophora_pilosa,209,50,31,92
+lobophyllia,219,206,173,93
+pavona_submassive,229,55,127,94
+"p. meandrina, pocillipora meandrina",239,98,97,95
+porites_rus,249,229,71,96
+cyphastrea,3,216,93,97
+halimeda,13,142,236,98
+outofbounds,23,127,38,99
+sea cucumber,33,226,50,100
+peysonnelia,43,25,7,101
+"pocillopora, pocillopora sp.",53,47,121,102
+"pavona_varians, pavona varians, p. varians",63,85,208,103
+unknow_massive,73,248,246,104
+zooanthid,83,109,205,105
+lobophora,93,30,84,106
+porites_superfusa,103,194,1,107
+no data,113,199,135,108
+sand,123,232,146,109
+"unknown, unknow",133,216,249,110
+unknow_submassive,143,79,97,111
+colony perimeter,153,151,111,112
+goniastrea_pectinata,163,29,31,113
+caulerpa,173,160,29,114
