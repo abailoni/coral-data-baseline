@@ -124,8 +124,13 @@ class BaseBatterySegmExperiment(BaseExperiment, AffinityInferenceMixin):
         dir_path = os.path.join("/scratch/bailoni/projects/coralsegm/predictions", self.get("name_experiment", default="generic_experiment"))
         check_dir_and_create(dir_path)
         filename = os.path.join(dir_path, "predictions_{}.h5".format(self.get("loaders/infer/dataset_name")))
-        writeHDF5(output.astype(np.float16), filename, self.get("inner_path_output", 'data'))
-        print("Saved to ", filename)
+
+        # Convert probabilities to segmentation:
+        print("Converting to segmentation...")
+        predicted_segm = output.argmax(axis=0).astype('uint8')
+
+        print("Saving to ", filename)
+        writeHDF5(predicted_segm, filename, self.get("inner_path_output", 'data'))
 
         # Dump configuration to export folder:
         self.dump_configuration(os.path.join(dir_path, "prediction_config_{}.yml".format(self.get("loaders/infer/dataset_name"))))

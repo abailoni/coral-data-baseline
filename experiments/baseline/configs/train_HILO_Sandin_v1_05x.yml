@@ -201,9 +201,10 @@ loaders:
           - *xy_size_precrop
           - *xy_size_precrop
         stride: [ 40, 40, 40 ] # Not needed anymore, automatically deduced
-        data_slice: ':, :, :'
+#        data_slice: ':1, :1300, :1300'
+        data_slice: ':24' #"24:"
         padding_mode: "reflect"
-        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ] ]
+        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
         is_multichannel: True
 
 inference:
@@ -219,8 +220,8 @@ inference:
   return_patch_mask: False
 
   window_overlap: [0, 60, 60]
-  blending_kwargs:
-    dim: 3
+#  blending_kwargs:
+#    dim: 3
 
   output_dws_fact: [1, 2, 2]
   index_output: 0
