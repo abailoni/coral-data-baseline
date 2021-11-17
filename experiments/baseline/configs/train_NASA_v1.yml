@@ -161,7 +161,7 @@ loaders:
 
   infer:
     inference_mode: True
-    dataset_name: HILO
+    dataset_name: NASA
     loader_config:
       # Number of processes to use for loading data. Set to (say) 10 if you wish to
       # use 10 CPU cores, or to 0 if you wish to use the same process for training and
@@ -173,11 +173,10 @@ loaders:
 
     transform_config:
       convert_batch_to_2D: True
-      downscale_and_crop:
-        # Inputs:
-        - {ds_factor: [1, 2, 2],
-          crop_factor: [1, 1, 1],
-          apply_to: 0}
+#      downscale_and_crop:
+#        - {ds_factor: [1, 2, 2],
+#          crop_factor: [1, 1, 1],
+#          apply_to: 0}
 
     volume_config:
       volume_keys_to_load: [ "raw" ]
@@ -185,8 +184,8 @@ loaders:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-        path_in_file: 'image'
+          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
+        path_in_file: 'image_normalized'
         dtype: float32
 
         # Sliding window size
@@ -196,28 +195,29 @@ loaders:
           - *xy_size_precrop
         stride: [ 40, 40, 40 ] # Not needed anymore, automatically deduced
 #        data_slice: ':1, :1300, :1300'
-        data_slice: ':24' #"24:"
+        data_slice: ':' #"24:"
         padding_mode: "reflect"
-        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
+        padding: [ [ 0,0 ], [ 0,0 ], [ 0,0 ]]
+#        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
         is_multichannel: True
 
 inference:
   crop_prediction: # How much I crop the predicted tensor: (local_crop in the output resolution)
     - [0, 0]
-#    - [0, 0]
-#    - [0, 0]
-    - [100, 100]
-    - [100, 100]
+    - [0, 0]
+    - [0, 0]
+#    - [100, 100]
+#    - [100, 100]
   # Make sure to exclude the invalid affinities:
   # your model can return a second output tensor that should be a binary
   # tensor indicating with outputs are valid and which are not
   return_patch_mask: False
 
-  window_overlap: [0, 60, 60]
+  window_overlap: [0, 0, 0]
 #  blending_kwargs:
 #    dim: 3
 
-  output_dws_fact: [1, 2, 2]
+  output_dws_fact: [1, 1, 1]
   index_output: 0
 
   model_output_is_2D: True

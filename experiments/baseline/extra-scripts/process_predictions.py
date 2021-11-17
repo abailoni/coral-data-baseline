@@ -4,7 +4,7 @@ import h5py
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
-from segmfriends.utils.various import writeHDF5, check_dir_and_create, writeHDF5attribute
+from segmfriends.utils.various import writeHDF5, check_dir_and_create, writeHDF5attribute, parse_data_slice
 from segmfriends.utils import various as var_utils
 from segmfriends.utils import segm_utils as segmutils
 
@@ -24,13 +24,32 @@ input_data_dir = os.path.join(main_dir, "converted_to_hdf5")
 prediction_dir = "/scratch/bailoni/projects/coralsegm/predictions"
 # ----------------
 
+# TODO: Load from config file
 datasets = {
-    "HILO": {'root-raw': "UH Hilo -- John Burns",
-             "raw_data_type": "_plot.jpg",
-             'root-labels': "recolored_annotations/BW/UH_HILO",
+    # "HILO": {'root-raw': "UH Hilo -- John Burns",
+    #          "raw_data_type": "_plot.jpg",
+    #          'root-labels': "recolored_annotations/BW/UH_HILO",
+    #          "labels_type": "_annotation.png",
+    #          "images_info":
+    #              "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+    #          "experiment_name": "HILO_v1",
+    #          "downscaling_factor": [1,2,2],
+    #          "train": ":26",
+    #          "val": "26:30",
+    #          "test": "30:"
+    #          },
+    "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
+             "raw_data_type": ".png",
+             'root-labels': "recolored_annotations/BW/NASA-AlanLi",
              "labels_type": "_annotation.png",
-             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
-             "experiment_name": "HILO_v1"},
+             "images_info":
+                 "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NASA_species_stats_val_train_test_split.csv",
+             "experiment_name": "infer_NASA_part1",
+             "downscaling_factor": [1,1,1],
+             "train": ":328",
+             "val": "328:369",
+             "test": "369:"
+             },
     # "sandin": {'root-raw': "Sandin_SIO",
     #          "raw_data_type": ".jpg",
     #          'root-labels': "recolored_annotations/BW/Sandin-SIO",
@@ -39,11 +58,6 @@ datasets = {
     #          "raw_data_type": "???",
     #          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
     #          "labels_type": "_annotation.png"},
-    # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
-    #          "raw_data_type": ".png",
-    #          'root-labels': "recolored_annotations/BW/NASA-AlanLi",
-    #          "labels_type": "_annotation.png"},
-
 }
 
 
@@ -75,8 +89,8 @@ for data_name in datasets:
     train_val_split = images_info["split"]
     image_names = images_info.iloc[:, 1]
 
-    # TODO: update
-    GT = GT[:, ::2, ::2]
+    downscaling_crop = tuple(slice(None, None, dws_fc) for dws_fc in data_info["downscaling_factor"])
+    GT = GT[downscaling_crop]
     # pred_segm = pred_segm[:6]
 
     # Convert to one-hot:
@@ -101,9 +115,8 @@ for data_name in datasets:
         padding = [[0, nb_classes - nb_pred_classes]] + [[0, 0]] * len(one_hot_pred.shape[1:])
         one_hot_pred = np.pad(one_hot_pred, padding, mode="constant")
 
-    # TODO: update crop
-    # for crop_name, crop in zip(["train", "val", "test"], [":1", "26:30", "30:"]):
-    for crop_name, crop in zip(["train", "val", "test"], [":26", "26:30", "30:"]):
+    for crop_name in ["train", "val", "test"]:
+        crop = data_info[crop_name]
         crop_slc = var_utils.parse_data_slice(crop)
         onehot_crop_slc = (slice(None),) + crop_slc
 
@@ -141,12 +154,13 @@ for data_name in datasets:
         out_df.to_csv(os.path.join(scores_dir, "{}_scores.csv".format(crop_name)), index=False)
 
     # Rescale back to original res:
-    remapped_segm = scipy.ndimage.zoom(remapped_segm, zoom=(1,2,2), order=0)
+    if any([dws_fct != 1 for dws_fct in data_info["downscaling_factor"]]):
+        remapped_segm = scipy.ndimage.zoom(remapped_segm, zoom=data_info["downscaling_factor"], order=0)
 
     out_segm_dir = os.path.join(pred_dir, "segm_{}".format(data_name))
     check_dir_and_create(out_segm_dir)
     for i, img_data in images_info.iterrows():
-        out_path = os.path.join(out_segm_dir, "{}_segm.png".format(img_data[1]))
+        out_path = os.path.join(out_segm_dir, "{}_{}_segm.png".format(img_data["split"], img_data[1]))
         cv2.imwrite(out_path, remapped_segm[i])
 
     #
