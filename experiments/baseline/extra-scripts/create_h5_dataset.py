@@ -10,13 +10,14 @@ import pandas as pd
 
 # TODO: make as script argument
 RELABEL_CONSECUTIVE = True
+NORMALIZE_RAW = True
 
 datasets = {
-    "HILO": {'root-raw': "UH Hilo -- John Burns",
-             "raw_data_type": "_plot.jpg",
-             'root-labels': "recolored_annotations/BW/UH_HILO",
-             "labels_type": "_annotation.png",
-             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
+    # "HILO": {'root-raw': "UH Hilo -- John Burns",
+    #          "raw_data_type": "_plot.jpg",
+    #          'root-labels': "recolored_annotations/BW/UH_HILO",
+    #          "labels_type": "_annotation.png",
+    #          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
     # "sandin": {'root-raw': "Sandin_SIO",
     #          "raw_data_type": ".jpg",
     #          'root-labels': "recolored_annotations/BW/Sandin-SIO",
@@ -25,10 +26,11 @@ datasets = {
     #          "raw_data_type": "???",
     #          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
     #          "labels_type": "_annotation.png"},
-    # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
-    #          "raw_data_type": ".png",
-    #          'root-labels': "recolored_annotations/BW/NASA-AlanLi",
-    #          "labels_type": "_annotation.png"},
+    "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
+             "raw_data_type": ".png",
+             'root-labels': "recolored_annotations/BW/NASA-AlanLi",
+             "labels_type": "_annotation.png",
+             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NASA_species_stats_val_train_test_split.csv"},
 
 }
 
@@ -45,7 +47,7 @@ for data_name in datasets:
     combined_annotations = []
     data_info = datasets[data_name]
 
-    images_info = pd.read_csv(data_info["images_info"])
+    images_info = pd.read_csv(data_info["images_info"], skipfooter=1)
     images_info = images_info.sort_values(by=['split'], ascending=False, na_position='first')
 
     images_info.loc[images_info["split"].isna(), "split"] = "train"
@@ -141,29 +143,28 @@ for data_name in datasets:
     combined_raw = np.stack(combined_raw)
     combined_raw = np.rollaxis(combined_raw, axis=3, start=0)
 
-    # # Normalize channels: #TODO: avoid saving in float32? Big file
-    # mean = combined_raw.reshape(3, -1).mean(axis=1)[:, None, None, None]
-    # std = combined_raw.reshape(3, -1).std(axis=1)[:, None, None, None]
-    # combined_raw = ((combined_raw - mean) / std).astype("float32")
 
     # Collect some stats about annotations:
     combined_annotations = np.stack(combined_annotations)
-    max_label = combined_annotations.max()
-    bincount = np.bincount(combined_annotations.flatten())
-    number_labels = (bincount > 0).sum()
-    print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
+    # max_label = combined_annotations.max()
+    # bincount = np.bincount(combined_annotations.flatten())
+    # number_labels = (bincount > 0).sum()
+    # print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
 
     if data_name == "NASA":
-        # FIXME: for NASA dataset, set label 108 to background or ignore label
-        raise NotImplementedError()
-        # combined_annotations[combined_annotations == 108] = 0
+        # Set OutofBounds (99), Bare Substratum (30), and no data (108) classes to background:
+        combined_annotations[combined_annotations == 99] = 0
+        combined_annotations[combined_annotations == 30] = 0
+        combined_annotations[combined_annotations == 108] = 0
+
+    print("Total size of combined dataset: ", combined_annotations.shape)
 
     # Relabel labels consectuively to reduce size of output CNN layer
     # TODO: problem is that then labels across datasets are no longer consistent
     if RELABEL_CONSECUTIVE:
         labels_colors.insert(5, "contiguous", "")
         combined_annotations, max_label, mapping = vigra.analysis.relabelConsecutive(combined_annotations)
-        print("Max label for dataset {}: {}".format(data_name, max_label))
+        print("Max label for dataset {}: {}. Total number of out channels/classes for the model: {}".format(data_name, max_label, max_label+1))
         for orig_label, new_label in mapping.items():
             labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
     else:
@@ -172,11 +173,22 @@ for data_name in datasets:
     # Write outputs:
     hdf5_path = os.path.join(out_dir, "{}.h5".format(data_name))
     writeHDF5(combined_raw, hdf5_path, "image")
+    # Normalize channels:
+    if NORMALIZE_RAW:
+        mean = combined_raw.reshape(3, -1).mean(axis=1)[:, None, None, None]
+        std = combined_raw.reshape(3, -1).std(axis=1)[:, None, None, None]
+        combined_raw = ((combined_raw - mean) / std).astype("float16")
+        writeHDF5(combined_raw, hdf5_path, "image_normalized")
+
+
     writeHDF5(combined_annotations, hdf5_path, "labels")
 
     # Write split info
-    for split_type, count in split_counts.items():
-        print(split_type, count)
+    crop_indx = 0
+    for split_type in ["train", "val", "test"]:
+        count = split_counts[split_type]
+        print("{} - Number of images: {} - Crop slice {}:{}".format(split_type, count, crop_indx, crop_indx+count))
+        crop_indx += count
         writeHDF5attribute(attribute_data=count,attriribute_name="nb_img_{}".format(split_type),
                            file_path=hdf5_path, inner_path_dataset="image")
 
