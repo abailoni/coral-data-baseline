@@ -3,27 +3,27 @@ shortcuts:
 #  xy_size: &xy_size
   xy_size_precrop: &xy_size_precrop 512
   stride: &stride [1, 470, 470]
-  batch_size: &batch_size 11 # 11
+  batch_size: &batch_size 11
   num_workers: &num_workers 20
 
-# TODO: bactch, widnow size
+# TEmp changes:  crops
 
-# TODO: plots, load/iterations
+# TODO:
 #  - Remove downscaling factors and use NASA setup
 #  - Update data, and check train/val plus number of classes
 #  - Debug ignore label
 #  - Use proper multi-class Dice loss
 #  - Num workers
 
+
 device: cuda
 
 loaders:
   general:
     dataset_names:
-#      - NASA
-      - NOAA
-    #      - sandin
-    #      - HILO
+#      - sandin
+      - HILO
+    #      - NASA
 
     volume_config:
       volume_keys_to_load:
@@ -93,19 +93,16 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: '1:'
-        HILO: ':26'
-        NASA: ":328"
-        NOAA: "0:19"
+        HILO: ':27'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
 #        sigma: 0.025
@@ -116,10 +113,9 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -140,19 +136,16 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: ':1'
-        HILO: '26:30'
-        NASA: "328:369"
-        NOAA: "19:22"
+        HILO: '27:30'
 
     # Specify paths to volumes
     volume_config:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
         #        sigma: 0.025
@@ -164,10 +157,9 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -177,7 +169,7 @@ loaders:
 
   infer:
     inference_mode: True
-    dataset_name: NASA
+    dataset_name: HILO
     loader_config:
       # Number of processes to use for loading data. Set to (say) 10 if you wish to
       # use 10 CPU cores, or to 0 if you wish to use the same process for training and
@@ -190,6 +182,7 @@ loaders:
     transform_config:
       convert_batch_to_2D: True
 #      downscale_and_crop:
+#        # Inputs:
 #        - {ds_factor: [1, 2, 2],
 #          crop_factor: [1, 1, 1],
 #          apply_to: 0}
@@ -198,10 +191,9 @@ loaders:
       volume_keys_to_load: [ "raw" ]
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+#          NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
 
@@ -212,25 +204,24 @@ loaders:
           - *xy_size_precrop
         stride: [ 40, 40, 40 ] # Not needed anymore, automatically deduced
 #        data_slice: ':1, :1300, :1300'
-        data_slice: '22:25' #"24:"
+        data_slice: '27:' #"24:"
         padding_mode: "reflect"
-        padding: [ [ 0,0 ], [ 0,0 ], [ 0,0 ]]
-#        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
+        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
         is_multichannel: True
 
 inference:
   crop_prediction: # How much I crop the predicted tensor: (local_crop in the output resolution)
     - [0, 0]
-    - [0, 0]
-    - [0, 0]
-#    - [100, 100]
-#    - [100, 100]
+#    - [0, 0]
+#    - [0, 0]
+    - [100, 100]
+    - [100, 100]
   # Make sure to exclude the invalid affinities:
   # your model can return a second output tensor that should be a binary
   # tensor indicating with outputs are valid and which are not
   return_patch_mask: False
 
-  window_overlap: [0, 0, 0]
+  window_overlap: [0, 60, 60]
 #  blending_kwargs:
 #    dim: 3
 
@@ -243,7 +234,7 @@ inference:
 model:
   model_class: confnets.models.MultiScaleInputMultiOutputUNet
   model_kwargs:
-#    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/NASA_v1_part2/checkpoint.pytorch"
+#    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/HILO_05x_v1_trainSplit/checkpoint.pytorch"
     ndim: 2
     return_input: False
     number_multiscale_inputs: 1
@@ -262,7 +253,7 @@ model:
       global:
         activation: Softmax
 #        nb_norm_groups: 16
-        out_channels: 10
+        out_channels: 31
       0: {depth: 0}
 #      1: {depth: 1}
 #      2: {depth: 2}
@@ -289,6 +280,7 @@ trainer:
 #        - 2.730653289
     transforms:
       - segmfriends.utils.losses.MaskIgnoreClass: {}
+#      - neurofire.criteria.loss_transforms.RemoveSegmentationFromTarget: {}
 #      - segmfriends.transform.volume.ApplyAndRemoveMask: {first_invert_target: True}
 
   optimizer:

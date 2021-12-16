@@ -8,32 +8,42 @@ from segmfriends.utils.various import writeHDF5, check_dir_and_create, writeHDF5
 import vigra
 import pandas as pd
 from segmfriends.io.images import write_image_to_file, write_segm_to_file
+import scipy.ndimage
 
 import PIL
 PIL.Image.MAX_IMAGE_PIXELS = 933120000
 
 # TODO: make as script argument
+IGNORE_LABEL = 99
+HAS_IGNORE_LABEL = True
 RELABEL_CONSECUTIVE = True
+RELABEL_ALL_DATASETS_CONSISTENTLY = True
 NORMALIZE_RAW = True
+OUT_postfix = "_combined_without_NASA"
 
 datasets = {
-    # "HILO": {'root-raw': "UH Hilo -- John Burns",
-    #          "raw_data_type": "_plot.jpg",
-    #          'root-labels': "recolored_annotations/BW/UH_HILO",
-    #          "labels_type": "_annotation.png",
-    #          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
+    "HILO": {'root-raw': "UH Hilo -- John Burns",
+             "raw_data_type": "_plot.jpg",
+             'dws_ratio': 3,
+             'root-labels': "recolored_annotations/BW/UH_HILO",
+             "labels_type": "_annotation.png",
+             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
     # "sandin": {'root-raw': "Sandin_SIO",
     #          "raw_data_type": ".jpg",
-    #          'root-labels': "recolored_annotations/BW/Sandin-SIO",
+    #          'root-labels': "recolored_annotations/BW/Sandin-SIO", #FIXME: labels are not sharp
     #          "labels_type": "_annotation.jpg"},
     # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
     #          "raw_data_type": ".png",
     #          'root-labels': "recolored_annotations/BW/NASA-AlanLi",
     #          "labels_type": "_annotation.png",
     #          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NASA_species_stats_val_train_test_split.csv"},
-    "NOAA": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+    "NOAA": {
+        'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+        'dws_ratio': 3,
+        # 'root-raw': "NOAA -- Couch-Oliver",
              "raw_data_type": "_orthoprojection.png",
              'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+             # 'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
              "labels_type": "_annotation.png",
              "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv"},
 
@@ -42,12 +52,8 @@ datasets = {
 }
 
 
-labels_colors = pd.read_csv("/scratch/bailoni/pyCh_repos/coral-data-baseline/data/labels_and_colors.csv")
 
-original_data_dir = "/g/scb/alexandr/shared/alberto/datasets/coral_data/Coral Data Sharing"
-main_dir = os.path.join("/scratch/bailoni", "datasets/coral_data")
-out_dir = os.path.join(main_dir, "converted_to_hdf5")
-check_dir_and_create(out_dir)
+
 
 
 def crop_empty_borders(label_image, ignore_label=99, extra_margin=150):
@@ -73,6 +79,15 @@ def crop_empty_borders(label_image, ignore_label=99, extra_margin=150):
 def main_function(mode="convert_to_hdf5"):
     assert mode in ["convert_to_hdf5", "crop_ignore_label"], "Mode is not recognized"
 
+    labels_colors = pd.read_csv("/scratch/bailoni/pyCh_repos/coral-data-baseline/data/labels_and_colors.csv")
+
+    original_data_dir = "/g/scb/alexandr/shared/alberto/datasets/coral_data/Coral Data Sharing"
+    main_dir = os.path.join("/scratch/bailoni", "datasets/coral_data")
+    out_dir = os.path.join(main_dir, "converted_to_hdf5" + OUT_postfix)
+    check_dir_and_create(out_dir)
+
+    collected_data = {}
+
     for data_name in datasets:
         combined_raw = []
         combined_annotations = []
@@ -96,18 +111,18 @@ def main_function(mode="convert_to_hdf5"):
         max_shape = None
         for file, split in zip(image_names, train_val_split):
             if data_name == "sandin":
-                raise NotImplementedError
-                # if data_name == "sandin" and file.endswith("_mask.jpg"):
-                #     # In this data raw images do not have a unique identifier, so we need to
-                #     # manually ignore masks:
-                #     continue
+                if data_name == "sandin" and file.endswith("_mask.jpg"):
+                    # In this data raw images do not have a unique identifier, so we need to
+                    # manually ignore masks:
+                    continue
+                raise NotImplementedError("Labels are not sharp, please update them")
 
             # add extension and filename ending:
             file = file + data_info["raw_data_type"]
 
 
             # Check shape of image:
-            image = np.asarray(Image.open(os.path.join(data_dir, file)))
+            img = Image.open(os.path.join(data_dir, file))
             # Load the associated annotations:
             annotation_filename = file.replace(data_info["raw_data_type"], data_info["labels_type"])
             annotation_path = os.path.join(labels_dir, annotation_filename)
@@ -121,7 +136,6 @@ def main_function(mode="convert_to_hdf5"):
             new_image_data['img_path'] = os.path.join(data_dir, file)
             new_image_data['ann_path'] = annotation_path
 
-            img = Image.open(os.path.join(data_dir, file))
             img_shape = img.size[:2]
 
             annotations = Image.open(annotation_path)
@@ -132,17 +146,17 @@ def main_function(mode="convert_to_hdf5"):
             if mode == "crop_ignore_label":
                 img = np.asarray(img)
                 annotations = np.asarray(annotations)
-                crop_slice = crop_empty_borders(annotations, ignore_label=99, extra_margin=1000)
+                crop_slice = crop_empty_borders(annotations, ignore_label=IGNORE_LABEL, extra_margin=1000)
                 annotations = annotations[crop_slice]
                 img = img[crop_slice]
 
                 # Write images:
-                out_dir = os.path.join(data_dir, "cropped_images")
-                check_dir_and_create(out_dir)
+                out_cropped_dir = os.path.join(data_dir, "cropped_images")
+                check_dir_and_create(out_cropped_dir)
                 out_label_dir = os.path.join(labels_dir, "cropped_images")
                 check_dir_and_create(out_label_dir)
                 write_segm_to_file(os.path.join(out_label_dir, annotation_filename), annotations)
-                write_image_to_file(os.path.join(out_dir, file), img)
+                write_image_to_file(os.path.join(out_cropped_dir, file), img)
 
                 continue
 
@@ -188,12 +202,27 @@ def main_function(mode="convert_to_hdf5"):
                 print("Zero-padded image: from {} to {}".format(image.shape[:2], max_shape))
                 image = np.pad(image, pad_width=((0, shape_diff[0]), (0, shape_diff[1]), (0, 0)))
                 annotations = np.pad(annotations, pad_width=((0, shape_diff[0]), (0, shape_diff[1])))
+
+            # Downscale images if necessary:
+            # TODO: this should be done before to improve performaces:
+            if 'dws_ratio' in datasets[data_name]:
+                dws_ratio = datasets[data_name]['dws_ratio']
+                assert isinstance(dws_ratio, int)
+                if dws_ratio != 1:
+                    # Apply filter to image and downsample:
+                    image = np.stack([scipy.ndimage.uniform_filter(image[...,ch], size=dws_ratio)[::dws_ratio,::dws_ratio] for ch in range(image.shape[2])], axis=2)
+                    annotations = annotations[::dws_ratio,::dws_ratio]
+
             combined_raw.append(image)
             combined_annotations.append(annotations)
 
         # Reshape to pytorch-tensor style:
         combined_raw = np.stack(combined_raw)
         combined_raw = np.rollaxis(combined_raw, axis=3, start=0)
+        # FIXME: If the image was RGBA, throw away the Alpha channel
+        if combined_raw.shape[0] == 4:
+            combined_raw = combined_raw[:3]
+        assert combined_raw.shape[0] == 3
 
 
         # Collect some stats about annotations:
@@ -203,24 +232,97 @@ def main_function(mode="convert_to_hdf5"):
         # number_labels = (bincount > 0).sum()
         # print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
 
+
         if data_name == "NASA":
             # Set OutofBounds (99), Bare Substratum (30), and no data (108) classes to background:
+            # In this case, ignore label can be safely mapped to background because the image there looks very different
             combined_annotations[combined_annotations == 99] = 0
             combined_annotations[combined_annotations == 30] = 0
             combined_annotations[combined_annotations == 108] = 0
 
-        print("Total size of combined dataset: ", combined_annotations.shape)
+        print("Total size of combined dataset {}: ".format(data_name), combined_annotations.shape)
+        collected_data[data_name] = [combined_raw, combined_annotations]
 
+        # Write some image data:
+        images_info.to_csv(os.path.join(out_dir, "{}_images_info.csv".format(data_name)))
+
+        # Write split info
+        crop_indx = 0
+        print("Split counts for {}:".format(data_name))
+        for split_type in ["train", "val", "test"]:
+            count = split_counts[split_type]
+            print("{} - Number of images: {} - Crop slice {}:{}".format(split_type, count, crop_indx, crop_indx+count))
+            crop_indx += count
+            # writeHDF5attribute(attribute_data=count,attriribute_name="nb_img_{}".format(split_type),
+            #                    file_path=hdf5_path, inner_path_dataset="image")
+
+
+    def relabel_continuous_with_ignore_label(labels, ignore_label=IGNORE_LABEL):
+        """
+        Background is automatically preserved in the mapping transformation, but the ignore label requires extra care
+        """
+        # Temporarely map the ignore label to zero:
+        ignore_mask = labels == ignore_label
+        labels[ignore_mask] = 0
+
+        # Now remap using vigra:
+        remapped, max_label, mapping = vigra.analysis.relabelConsecutive(labels)
+
+        # Finally, map ignore label as max_label+1:
+        remapped[ignore_mask] = max_label + 1
+        mapping[ignore_label] = max_label + 1
+
+        return remapped, max_label+1, mapping
+
+
+    # Check which labels appear across all datasets:
+    unique_labels = None
+    labels_colors.insert(5, "contiguous", "")
+    if len(datasets) > 1 and RELABEL_CONSECUTIVE and RELABEL_ALL_DATASETS_CONSISTENTLY:
+        for data_name in datasets:
+            new_labels = np.unique(collected_data[data_name][1])
+            if unique_labels is None:
+                unique_labels = new_labels
+            else:
+                unique_labels = np.concatenate([unique_labels, new_labels], axis=0)
+
+        # Now define the mapping:
+        _, max_label, mapping = relabel_continuous_with_ignore_label(unique_labels)
+
+        has_ignore_label = IGNORE_LABEL in mapping
+        print("Ignore label {} is in dataset {}: {}".format(IGNORE_LABEL, data_name, has_ignore_label))
+        if has_ignore_label:
+            print("   --> Ignore label {} mapped to label {}".format(IGNORE_LABEL, mapping[IGNORE_LABEL]))
+
+        # Write mapping to csv table:
+        print("Max label for all datasets: {}. Total number of out channels/classes for the model: {}".format(max_label,
+                                                                                                            max_label + 1 if not has_ignore_label else max_label))
+        for orig_label, new_label in mapping.items():
+            labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
+
+    # Now do the actual continuous relabeling and write the outputs:
+    for data_name in datasets:
+        combined_raw = collected_data[data_name][0]
+        combined_annotations = collected_data[data_name][1]
         # Relabel labels consectuively to reduce size of output CNN layer
-        # TODO: problem is that then labels across datasets are no longer consistent
-        if RELABEL_CONSECUTIVE:
-            labels_colors.insert(5, "contiguous", "")
-            combined_annotations, max_label, mapping = vigra.analysis.relabelConsecutive(combined_annotations)
-            print("Max label for dataset {}: {}. Total number of out channels/classes for the model: {}".format(data_name, max_label, max_label+1))
+        if unique_labels is not None:
+            # Apply the mapping that was previously computed
+            vigra.analysis.applyMapping(combined_annotations, mapping, out=combined_annotations)
+        elif RELABEL_CONSECUTIVE:
+            combined_annotations, max_label, mapping = relabel_continuous_with_ignore_label(combined_annotations)
+
+            has_ignore_label = IGNORE_LABEL in mapping
+            print("Ignore label {} is in dataset {}: {}".format(IGNORE_LABEL, data_name, has_ignore_label))
+            if has_ignore_label:
+                print("   --> Ignore label {} mapped to label {}".format(IGNORE_LABEL, mapping[IGNORE_LABEL]))
+
+            print("Max label for dataset {}: {}. Total number of out channels/classes for the model: {}".format(data_name, max_label,
+                                                                                                                max_label+1 if not has_ignore_label else max_label))
+            labels_colors = labels_colors.assign(contiguous="")
             for orig_label, new_label in mapping.items():
                 labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
         else:
-            labels_colors.insert(5, "contiguous", labels_colors["BW"])
+            labels_colors = labels_colors.assign(contiguous=labels_colors["BW"])
 
         # Write outputs:
         hdf5_path = os.path.join(out_dir, "{}.h5".format(data_name))
@@ -235,21 +337,12 @@ def main_function(mode="convert_to_hdf5"):
 
         writeHDF5(combined_annotations, hdf5_path, "labels")
 
-        # Write split info
-        crop_indx = 0
-        for split_type in ["train", "val", "test"]:
-            count = split_counts[split_type]
-            print("{} - Number of images: {} - Crop slice {}:{}".format(split_type, count, crop_indx, crop_indx+count))
-            crop_indx += count
-            writeHDF5attribute(attribute_data=count,attriribute_name="nb_img_{}".format(split_type),
-                               file_path=hdf5_path, inner_path_dataset="image")
-
         # Write csv files:
         labels_colors.to_csv(hdf5_path.replace(".h5", "_labels.csv"))
-        images_info.to_csv(hdf5_path.replace(".h5", "_images_info.csv"))
 
-main_function("crop_ignore_label")
-# main_function()
+
+# main_function("crop_ignore_label")
+main_function()
 
 
 

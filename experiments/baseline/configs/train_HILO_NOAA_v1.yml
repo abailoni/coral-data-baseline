@@ -6,9 +6,8 @@ shortcuts:
   batch_size: &batch_size 11 # 11
   num_workers: &num_workers 20
 
-# TODO: bactch, widnow size
 
-# TODO: plots, load/iterations
+# TODO: for infer, modify prediction slice
 #  - Remove downscaling factors and use NASA setup
 #  - Update data, and check train/val plus number of classes
 #  - Debug ignore label
@@ -20,10 +19,10 @@ device: cuda
 loaders:
   general:
     dataset_names:
-#      - NASA
+      - HILO
       - NOAA
+#      - NASA
     #      - sandin
-    #      - HILO
 
     volume_config:
       volume_keys_to_load:
@@ -93,7 +92,7 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: '1:'
-        HILO: ':26'
+        HILO: ':27'
         NASA: ":328"
         NOAA: "0:19"
 
@@ -102,10 +101,10 @@ loaders:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/NOAA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
 #        sigma: 0.025
@@ -116,10 +115,10 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/NOAA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -140,7 +139,7 @@ loaders:
       # Data slice to iterate over.
       data_slice:
         sandin: ':1'
-        HILO: '26:30'
+        HILO: '27:30'
         NASA: "328:369"
         NOAA: "19:22"
 
@@ -149,10 +148,10 @@ loaders:
       # Raw data
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/NOAA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
         #        sigma: 0.025
@@ -164,10 +163,10 @@ loaders:
       # Segmentation
       GT:
         path: # '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/NOAA.h5'
         path_in_file: 'labels'
         dtype: int64
         label_volume: False
@@ -198,10 +197,10 @@ loaders:
       volume_keys_to_load: [ "raw" ]
       raw:
         path: #'/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
-          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/HILO.h5'
+          HILO: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/HILO.h5'
           sandin: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/sandin.h5'
           NASA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5/NASA.h5'
-          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_fixed_ignore_label/NOAA.h5'
+          NOAA: '/scratch/bailoni/datasets/coral_data/converted_to_hdf5_combined_without_NASA/NOAA.h5'
         path_in_file: 'image_normalized'
         dtype: float32
 
@@ -262,7 +261,7 @@ model:
       global:
         activation: Softmax
 #        nb_norm_groups: 16
-        out_channels: 10
+        out_channels: 34
       0: {depth: 0}
 #      1: {depth: 1}
 #      2: {depth: 2}
