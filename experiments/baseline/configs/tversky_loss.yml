@@ -1,0 +1,7 @@
+trainer:
+  criterion:
+    loss_name: "kornia.losses.TverskyLoss"
+    kwargs: {alpha: 0.5, beta: 0.5}
+    transforms:
+      - segmfriends.utils.losses.MaskIgnoreClass: { }
+      - segmfriends.utils.losses.RemoveChannelDimension: {apply_to: [1]}

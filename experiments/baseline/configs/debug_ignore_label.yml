@@ -1,0 +1,46 @@
+loaders:
+  general:
+    loader_config:
+      batch_size: 4
+      num_workers: 1
+
+trainer:
+  criterion:
+    loss_name: "kornia.losses.TverskyLoss"
+    kwargs: {alpha: 0.5, beta: 0.5}
+    transforms:
+      - segmfriends.utils.losses.MaskIgnoreClass: { }
+      - segmfriends.utils.losses.RemoveChannelDimension: {apply_to: [1]}
+
+  tensorboard:
+    log_images_every: [20, 'iterations']
+
+
+
+firelight:
+  segm_results_deb:
+    ImageGridVisualizer:
+      input_mapping:
+        global: [B: ":3"] # the mapping specified in 'global' is applied to all keys
+      pad_width: 1  # width of the border between images in pixels
+      pad_value: .2  # intensity of the border pixels
+      upsampling_factor: 1  # the whole grid is upsampled by this factor
+      row_specs: ['H', 'S', 'B']
+      column_specs: ['W', 'C', 'V']
+      visualizers:
+        - SegmentationVisualizer:
+            input: ['target_before_remapping', index: 0]
+            background_label: 0
+        - SegmentationVisualizer:
+            input: ['target', index: 0]
+            background_label: 0
+        - RGBVisualizer:
+            input: ['inputs', index: 0]
+        - IdentityVisualizer:
+            input: ['prediction_after_mod', index: 0, C: ":4"]
+            cmap: gray
+            value_range: [0,1]
+        - IdentityVisualizer:
+            input: ['prediction', index: 0, C: ":4"]
+            cmap: gray
+            value_range: [0,1]

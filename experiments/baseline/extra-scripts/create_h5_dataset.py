@@ -21,6 +21,10 @@ RELABEL_ALL_DATASETS_CONSISTENTLY = True
 NORMALIZE_RAW = True
 OUT_postfix = "_combined_without_NASA"
 
+
+# TODO: At the moment I pad images and annotations with 0 (background). Better approach would be to pad them with ignore
+#      label
+
 datasets = {
     "HILO": {'root-raw': "UH Hilo -- John Burns",
              "raw_data_type": "_plot.jpg",
@@ -32,7 +36,7 @@ datasets = {
     #          "raw_data_type": ".jpg",
     #          'root-labels': "recolored_annotations/BW/Sandin-SIO", #FIXME: labels are not sharp
     #          "labels_type": "_annotation.jpg"},
-    # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
+    # "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images", #FIXME: some of the annotations are crap
     #          "raw_data_type": ".png",
     #          'root-labels': "recolored_annotations/BW/NASA-AlanLi",
     #          "labels_type": "_annotation.png",

@@ -1,0 +1,4 @@
+trainer:
+  optimizer:
+    Adam:
+      lr: 0.00001

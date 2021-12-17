@@ -13,6 +13,7 @@ import neurofire
 import confnets
 import inferno
 import segmfriends
+import kornia
 
 
 from inferno.io.transform import Compose

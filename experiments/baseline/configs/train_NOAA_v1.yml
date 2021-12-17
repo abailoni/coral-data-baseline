@@ -243,7 +243,7 @@ inference:
 model:
   model_class: confnets.models.MultiScaleInputMultiOutputUNet
   model_kwargs:
-#    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/NASA_v1_part2/checkpoint.pytorch"
+    loadfrom: "/scratch/bailoni/pyCh_repos/coral-data-baseline/experiments/baseline/runs/NOAA_v1/checkpoint.pytorch"
     ndim: 2
     return_input: False
     number_multiscale_inputs: 1
@@ -271,7 +271,8 @@ model:
 
 
 trainer:
-  max_epochs: 1000 # basically infinite
+#  max_epochs: 1000
+  max_epochs: 999999 # basically infinite
   num_targets: 1
 
   criterion:
@@ -294,6 +295,7 @@ trainer:
   optimizer:
     Adam:
       lr: 0.0001
+#      lr: 0.00001
       weight_decay: 0.0005
       amsgrad: True
 #      betas: [0.9, 0.999]
@@ -354,7 +356,7 @@ firelight:
       visualizers:
 
         - SegmentationVisualizer:
-            input: ['target', index: 0]
+            input: ['target_before_remapping', index: 0]
             background_label: 0
 #            cmap: "hsv"
 #            value_range: [0,36.]
@@ -417,7 +419,7 @@ firelight:
       visualizers:
 
         - SegmentationVisualizer:
-            input: ['target', index: 0]
+            input: ['target_before_remapping', index: 0]
             background_label: 0
         - RGBVisualizer:
             input: ['inputs', index: 0]
