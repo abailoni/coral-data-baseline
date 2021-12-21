@@ -177,7 +177,7 @@ loaders:
 
   infer:
     inference_mode: True
-    dataset_name: NASA
+    dataset_name: NOAA
     loader_config:
       # Number of processes to use for loading data. Set to (say) 10 if you wish to
       # use 10 CPU cores, or to 0 if you wish to use the same process for training and
@@ -212,7 +212,8 @@ loaders:
           - *xy_size_precrop
         stride: [ 40, 40, 40 ] # Not needed anymore, automatically deduced
 #        data_slice: ':1, :1300, :1300'
-        data_slice: '22:25' #"24:"
+#        data_slice: '19:25' #"24:"
+        data_slice: ':' #"24:"
         padding_mode: "reflect"
         padding: [ [ 0,0 ], [ 0,0 ], [ 0,0 ]]
 #        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
@@ -230,14 +231,16 @@ inference:
   # tensor indicating with outputs are valid and which are not
   return_patch_mask: False
 
-  window_overlap: [0, 0, 0]
-#  blending_kwargs:
-#    dim: 3
+  window_overlap: [0, 226, 226]
+  blending_kwargs:
+    dim: 3
+    ramp_size: [1, 226, 226]
 
   output_dws_fact: [1, 1, 1]
   index_output: 0
 
   model_output_is_2D: True
+
 
 
 model:

@@ -211,11 +211,15 @@ loaders:
           - *xy_size_precrop
         stride: [ 40, 40, 40 ] # Not needed anymore, automatically deduced
 #        data_slice: ':1, :1300, :1300'
-        data_slice: '22:25' #"24:"
+        data_slice:
+          ":"
+#          NOAA: '19:25' #"24:"
+#          HILO: '27:'
         padding_mode: "reflect"
         padding: [ [ 0,0 ], [ 0,0 ], [ 0,0 ]]
 #        padding: [ [ 0,0 ], [ 220,220 ], [ 220,220 ]]
         is_multichannel: True
+
 
 inference:
   crop_prediction: # How much I crop the predicted tensor: (local_crop in the output resolution)
@@ -229,9 +233,10 @@ inference:
   # tensor indicating with outputs are valid and which are not
   return_patch_mask: False
 
-  window_overlap: [0, 0, 0]
-#  blending_kwargs:
-#    dim: 3
+  window_overlap: [0, 226, 226]
+  blending_kwargs:
+    dim: 3
+    ramp_size: [1, 226, 226]
 
   output_dws_fact: [1, 1, 1]
   index_output: 0
@@ -293,8 +298,8 @@ trainer:
 
   optimizer:
     Adam:
-      lr: 0.0001
-#      lr: 0.00001
+#      lr: 0.0001
+      lr: 0.00001
       weight_decay: 0.0005
       amsgrad: True
 #      betas: [0.9, 0.999]

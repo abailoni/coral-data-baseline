@@ -128,6 +128,8 @@ class BaseBatterySegmExperiment(BaseExperiment, AffinityInferenceMixin):
         # Convert probabilities to segmentation:
         print("Converting to segmentation...")
         predicted_segm = output.argmax(axis=0).astype('uint8')
+        # predicted_segm = (output == -1.).astype('uint8')
+        #
 
         print("Saving to ", filename)
         writeHDF5(predicted_segm, filename, self.get("inner_path_output", 'data'))

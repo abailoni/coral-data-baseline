@@ -20,52 +20,184 @@ from sklearn.metrics import confusion_matrix
 # TODO: make as script argument
 main_dir = os.path.join("/scratch/bailoni", "datasets/coral_data")
 original_data_dir = os.path.join(main_dir, "original_data")
-input_data_dir = os.path.join(main_dir, "converted_to_hdf5")
+
 prediction_dir = "/scratch/bailoni/projects/coralsegm/predictions"
 # ----------------
 
 # TODO: Load from config file
 datasets = {
-    # "HILO": {'root-raw': "UH Hilo -- John Burns",
-    #          "raw_data_type": "_plot.jpg",
-    #          'root-labels': "recolored_annotations/BW/UH_HILO",
-    #          "labels_type": "_annotation.png",
-    #          "images_info":
-    #              "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
-    #          "experiment_name": "HILO_v1",
-    #          "downscaling_factor": [1,2,2],
-    #          "train": ":26",
-    #          "val": "26:30",
-    #          "test": "30:"
-    #          },
-    "NASA": {'root-raw': "NASA Ames NeMO Net - Alan Li/2D Projections/RGB Images",
-             "raw_data_type": ".png",
-             'root-labels': "recolored_annotations/BW/NASA-AlanLi",
+# "HILO_part1": {'root-raw': "UH Hilo -- John Burns",
+#             "dataset_name": "HILO",
+#              "raw_data_type": "_plot.jpg",
+#              'root-labels': "recolored_annotations/BW/UH_HILO",
+#              "labels_type": "_annotation.png",
+#              "images_info":
+#                  "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+#              "experiment_name": "infer_HILO_v2_part1",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":27",
+#              "val": "27:30",
+#              "test": "30:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+#     "NOAA_part1": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+#         "dataset_name": "NOAA",
+#          "raw_data_type": "_orthoprojection.png",
+#          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+#          "labels_type": "_annotation.png",
+#          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv",                             "experiment_name": "infer_NOAA_v1_part1",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":19",
+#              "val": "19:22",
+#              "test": "22:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+#     "HILO_best": {'root-raw': "UH Hilo -- John Burns",
+#              "dataset_name": "HILO",
+#              "raw_data_type": "_plot.jpg",
+#              'root-labels': "recolored_annotations/BW/UH_HILO",
+#              "labels_type": "_annotation.png",
+#              "images_info":
+#                  "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+#              "experiment_name": "infer_HILO_v2_best",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":27",
+#              "val": "27:30",
+#              "test": "30:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+#     "NOAA_best": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+#         "dataset_name": "NOAA",
+#          "raw_data_type": "_orthoprojection.png",
+#          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+#          "labels_type": "_annotation.png",
+#          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv",                             "experiment_name": "infer_NOAA_v1_best",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":19",
+#              "val": "19:22",
+#              "test": "22:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+    "HILO_combined_best": {'root-raw': "UH Hilo -- John Burns",
+                "dataset_name": "HILO",
+             "raw_data_type": "_plot.jpg",
+             'root-labels': "recolored_annotations/BW/UH_HILO",
              "labels_type": "_annotation.png",
              "images_info":
-                 "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NASA_species_stats_val_train_test_split.csv",
-             "experiment_name": "infer_NASA_part1",
+                 "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+             "experiment_name": "infer_HILO_NOAA_v1_best",
+             # "pred_slice": "27:",
              "downscaling_factor": [1,1,1],
-             "train": ":328",
-             "val": "328:369",
-             "test": "369:"
+             "train": ":27",
+             "val": "27:30",
+             "test": "30:",
+             "has_ignore_label": True,
+             "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_combined_without_NASA")
              },
-    # "sandin": {'root-raw': "Sandin_SIO",
-    #          "raw_data_type": ".jpg",
-    #          'root-labels': "recolored_annotations/BW/Sandin-SIO",
-    #          "labels_type": "_annotation.jpg"},
-    # "NOAA": {'root-raw': "???", # FIXME: where is it...?
-    #          "raw_data_type": "???",
-    #          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
-    #          "labels_type": "_annotation.png"},
+    "NOAA_combined_best": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+        "dataset_name": "NOAA",
+         "raw_data_type": "_orthoprojection.png",
+         'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+         "labels_type": "_annotation.png",
+         "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv",                             "experiment_name": "infer_HILO_NOAA_v1_best",
+             # "pred_slice": "27:",
+             "downscaling_factor": [1,1,1],
+             "train": ":19",
+             "val": "19:22",
+             "test": "22:",
+             "has_ignore_label": True,
+             "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_combined_without_NASA")
+             },
+    "HILO_combined_part1": {'root-raw': "UH Hilo -- John Burns",
+                           "dataset_name": "HILO",
+                           "raw_data_type": "_plot.jpg",
+                           'root-labels': "recolored_annotations/BW/UH_HILO",
+                           "labels_type": "_annotation.png",
+                           "images_info":
+                               "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+                           "experiment_name": "infer_HILO_NOAA_v1_part1",
+                           # "pred_slice": "27:",
+                           "downscaling_factor": [1, 1, 1],
+                           "train": ":27",
+                           "val": "27:30",
+                           "test": "30:",
+                           "has_ignore_label": True,
+                           "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_combined_without_NASA")
+                           },
+    "NOAA_combined_part1": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+                           "dataset_name": "NOAA",
+                           "raw_data_type": "_orthoprojection.png",
+                           'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+                           "labels_type": "_annotation.png",
+                           "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv",
+                           "experiment_name": "infer_HILO_NOAA_v1_part1",
+                           # "pred_slice": "27:",
+                           "downscaling_factor": [1, 1, 1],
+                           "train": ":19",
+                           "val": "19:22",
+                           "test": "22:",
+                           "has_ignore_label": True,
+                           "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_combined_without_NASA")
+                           },
+
 }
 
 
-for data_name in datasets:
+# -----------------------------
+# Combined training:
+# -----------------------------
+
+# datasets = {
+#     "HILO": {'root-raw': "UH Hilo -- John Burns",
+#                 "dataset_name": "HILO",
+#              "raw_data_type": "_plot.jpg",
+#              'root-labels': "recolored_annotations/BW/UH_HILO",
+#              "labels_type": "_annotation.png",
+#              "images_info":
+#                  "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv",
+#              "experiment_name": "infer_HILO_NOAA_v1_best",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":27",
+#              "val": "27:30",
+#              "test": "30:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+#     "NOAA": {'root-raw': "NOAA -- Couch-Oliver/cropped_images",
+#          "raw_data_type": "_orthoprojection.png",
+#          'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+#          "labels_type": "_annotation.png",
+#          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv",                             "experiment_name": "infer_HILO_NOAA_v1_best",
+#              # "pred_slice": "27:",
+#              "downscaling_factor": [1,1,1],
+#              "train": ":19",
+#              "val": "19:22",
+#              "test": "22:",
+#              "has_ignore_label": True,
+#              "input_data_dir": os.path.join(main_dir, "converted_to_hdf5_fixed_ignore_label")
+#              },
+# }
+
+
+for dict_key in datasets:
+
     combined_raw = []
     combined_annotations = []
-    data_info = datasets[data_name]
+    data_info = datasets[dict_key]
+    data_name = data_info["dataset_name"]
+    print(data_name)
+    print(data_info["experiment_name"], "...")
 
+    input_data_dir = data_info["input_data_dir"]
 
     # Load GT labels:
     input_data_path = os.path.join(input_data_dir, "{}.h5".format(data_name))
@@ -92,6 +224,17 @@ for data_name in datasets:
     downscaling_crop = tuple(slice(None, None, dws_fc) for dws_fc in data_info["downscaling_factor"])
     GT = GT[downscaling_crop]
     # pred_segm = pred_segm[:6]
+    pred_slice = None
+    if "pred_slice" in data_info:
+        pred_slice = parse_data_slice(data_info["pred_slice"])
+        GT = GT[pred_slice]
+
+    # Mask ignore-label:
+    ignore_label = None
+    if data_info["has_ignore_label"]:
+        ignore_label = GT.max()
+        ignore_mask = GT == ignore_label
+        pred_segm[ignore_mask] = ignore_label
 
     # Convert to one-hot:
     one_hot_GT = segmutils.convert_to_one_hot(GT)
@@ -116,8 +259,18 @@ for data_name in datasets:
         one_hot_pred = np.pad(one_hot_pred, padding, mode="constant")
 
     for crop_name in ["train", "val", "test"]:
+        print(crop_name)
         crop = data_info[crop_name]
         crop_slc = var_utils.parse_data_slice(crop)
+
+        # if pred_slice is not None:
+        #     for idx, pred_cr in enumerate(pred_slice):
+        #         assert isinstance(pred_cr, slice)
+        #         if len(crop_slc) >= idx+1:
+        #             subcrop = crop_slc[idx]
+        #             print()
+
+
         onehot_crop_slc = (slice(None),) + crop_slc
 
         out_df = labels_colors.copy()
@@ -131,10 +284,8 @@ for data_name in datasets:
         out_df = out_df.drop(columns=["Unnamed: 0", "contiguous", "R", "G", "B"])
         out_df.reindex(columns=["label", "BW", "IoU"] + list(out_df.loc[:, "label"]))
 
-        # Compute and save IoU:
+        # Compute IoU:
         IoU_global, IoU_per_class = segmutils.compute_IoU_numpy(one_hot_pred[onehot_crop_slc], one_hot_GT[onehot_crop_slc])
-        for cl, IoU_cl in enumerate(IoU_per_class):
-            out_df.loc[mapping[cl], "IoU"] = IoU_cl
 
         # Compute and save confusion matrix:
         # By definition a confusion matrix :math:`C` is such that :math:`C_{i, j}`
@@ -143,10 +294,22 @@ for data_name in datasets:
 
         conf_matrix = confusion_matrix(GT[crop_slc].flatten(), pred_segm[crop_slc].flatten(), labels=list(range(nb_classes)),
                                        normalize='true')
+        classes_to_be_ignored = []
+
         for cl, row in enumerate(conf_matrix):
+            # print(cl, row.sum())
+            if row.sum() <= 0.2 or cl == ignore_label:
+                classes_to_be_ignored.append(cl)
+                continue
             # TODO: more efficient way?
             for cl2, value in enumerate(row):
                 out_df.loc[mapping[cl], out_df.loc[mapping[cl2],"label"]] = value
+
+        # Save IoU in csv file:
+        for cl, IoU_cl in enumerate(IoU_per_class):
+            if cl not in classes_to_be_ignored:
+                out_df.loc[mapping[cl], "IoU"] = IoU_cl
+
 
         # Save resulting scores:
         scores_dir = os.path.join(pred_dir, "scores_{}".format(data_name))
