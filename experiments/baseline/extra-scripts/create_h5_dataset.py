@@ -11,6 +11,7 @@ from segmfriends.io.images import write_image_to_file, write_segm_to_file
 import scipy.ndimage
 
 import PIL
+
 PIL.Image.MAX_IMAGE_PIXELS = 933120000
 
 # TODO: make as script argument
@@ -21,8 +22,7 @@ RELABEL_ALL_DATASETS_CONSISTENTLY = True
 NORMALIZE_RAW = True
 OUT_postfix = "_combined_without_NASA"
 
-
-# TODO: At the moment I pad images and annotations with 0 (background). Better approach would be to pad them with ignore
+# FIXME: At the moment I pad images and annotations with 0 (background). Better approach would be to pad them with ignore
 #      label
 
 datasets = {
@@ -45,22 +45,16 @@ datasets = {
         'root-raw': "NOAA -- Couch-Oliver/cropped_images",
         'dws_ratio': 3,
         # 'root-raw': "NOAA -- Couch-Oliver",
-             "raw_data_type": "_orthoprojection.png",
-             'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
-             # 'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
-             "labels_type": "_annotation.png",
-             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv"},
-
-
+        "raw_data_type": "_orthoprojection.png",
+        'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver/cropped_images",
+        # 'root-labels': "recolored_annotations/BW/NOAA -- Couch-Oliver",
+        "labels_type": "_annotation.png",
+        "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/NOAA_species_stats_val_train_test_split.csv"},
 
 }
 
 
-
-
-
-
-def crop_empty_borders(label_image, ignore_label=99, extra_margin=150):
+def crop_empty_borders(label_image, ignore_label=99, extra_margin=1000):
     """
 
     :type label_image: np.ndarray
@@ -71,7 +65,7 @@ def crop_empty_borders(label_image, ignore_label=99, extra_margin=150):
     foreground_mask = label_image != ignore_label
     crops = []
     for axis in range(2):
-        foreground_indices = np.argwhere(foreground_mask.sum(axis=1-axis) > 0)
+        foreground_indices = np.argwhere(foreground_mask.sum(axis=1 - axis) > 0)
         left_crop = foreground_indices.min() - extra_margin
         left_crop = left_crop if left_crop >= 0 else 0
         right_crop = foreground_indices.max() + extra_margin
@@ -124,7 +118,6 @@ def main_function(mode="convert_to_hdf5"):
             # add extension and filename ending:
             file = file + data_info["raw_data_type"]
 
-
             # Check shape of image:
             img = Image.open(os.path.join(data_dir, file))
             # Load the associated annotations:
@@ -132,7 +125,8 @@ def main_function(mode="convert_to_hdf5"):
             annotation_path = os.path.join(labels_dir, annotation_filename)
             if not os.path.exists(annotation_path):
                 print("!!! Attention, annotation file for {} does not exist!".format(file))
-                raise NotImplementedError("Train/val/test split does not support this. All images listed in csv should exist.")
+                raise NotImplementedError(
+                    "Train/val/test split does not support this. All images listed in csv should exist.")
                 continue
 
             new_image_data = {}
@@ -164,7 +158,6 @@ def main_function(mode="convert_to_hdf5"):
 
                 continue
 
-
             if max_shape is None:
                 max_shape = img_shape
                 new_image_data['rotate_image'] = False
@@ -172,15 +165,16 @@ def main_function(mode="convert_to_hdf5"):
                 max_shape_diff = [0 if max_shp >= img_shape[i] else (img_shape[i] - max_shp) for i, max_shp in
                                   enumerate(max_shape)]
                 # Now try by rotating image:
-                max_shape_diff_rot = [0 if max_shp >= img_shape[1-i] else (img_shape[1-i] - max_shp) for i, max_shp in
-                                 enumerate(max_shape)]
+                max_shape_diff_rot = [0 if max_shp >= img_shape[1 - i] else (img_shape[1 - i] - max_shp) for i, max_shp
+                                      in
+                                      enumerate(max_shape)]
                 # Check which one requires less padding:
                 diff, diff_rot = np.array(max_shape_diff).sum(), np.array(max_shape_diff_rot).sum()
                 new_image_data['rotate_image'] = rotate_image = diff_rot < diff
 
                 selected_diff = max_shape_diff_rot if rotate_image else max_shape_diff
                 # Now update the maximum shape:
-                max_shape = [dif + max_shp  for max_shp, dif in zip(max_shape, selected_diff)]
+                max_shape = [dif + max_shp for max_shp, dif in zip(max_shape, selected_diff)]
 
             images_collected.append(new_image_data)
 
@@ -214,8 +208,10 @@ def main_function(mode="convert_to_hdf5"):
                 assert isinstance(dws_ratio, int)
                 if dws_ratio != 1:
                     # Apply filter to image and downsample:
-                    image = np.stack([scipy.ndimage.uniform_filter(image[...,ch], size=dws_ratio)[::dws_ratio,::dws_ratio] for ch in range(image.shape[2])], axis=2)
-                    annotations = annotations[::dws_ratio,::dws_ratio]
+                    image = np.stack(
+                        [scipy.ndimage.uniform_filter(image[..., ch], size=dws_ratio)[::dws_ratio, ::dws_ratio] for ch
+                         in range(image.shape[2])], axis=2)
+                    annotations = annotations[::dws_ratio, ::dws_ratio]
 
             combined_raw.append(image)
             combined_annotations.append(annotations)
@@ -228,14 +224,12 @@ def main_function(mode="convert_to_hdf5"):
             combined_raw = combined_raw[:3]
         assert combined_raw.shape[0] == 3
 
-
         # Collect some stats about annotations:
         combined_annotations = np.stack(combined_annotations)
         # max_label = combined_annotations.max()
         # bincount = np.bincount(combined_annotations.flatten())
         # number_labels = (bincount > 0).sum()
         # print("Stats for dataset {}: actual number of used labels is {}; max-label-value is {}".format(data_name, number_labels, max_label))
-
 
         if data_name == "NASA":
             # Set OutofBounds (99), Bare Substratum (30), and no data (108) classes to background:
@@ -255,11 +249,11 @@ def main_function(mode="convert_to_hdf5"):
         print("Split counts for {}:".format(data_name))
         for split_type in ["train", "val", "test"]:
             count = split_counts[split_type]
-            print("{} - Number of images: {} - Crop slice {}:{}".format(split_type, count, crop_indx, crop_indx+count))
+            print(
+                "{} - Number of images: {} - Crop slice {}:{}".format(split_type, count, crop_indx, crop_indx + count))
             crop_indx += count
             # writeHDF5attribute(attribute_data=count,attriribute_name="nb_img_{}".format(split_type),
             #                    file_path=hdf5_path, inner_path_dataset="image")
-
 
     def relabel_continuous_with_ignore_label(labels, ignore_label=IGNORE_LABEL):
         """
@@ -276,8 +270,7 @@ def main_function(mode="convert_to_hdf5"):
         remapped[ignore_mask] = max_label + 1
         mapping[ignore_label] = max_label + 1
 
-        return remapped, max_label+1, mapping
-
+        return remapped, max_label + 1, mapping
 
     # Check which labels appear across all datasets:
     unique_labels = None
@@ -300,7 +293,7 @@ def main_function(mode="convert_to_hdf5"):
 
         # Write mapping to csv table:
         print("Max label for all datasets: {}. Total number of out channels/classes for the model: {}".format(max_label,
-                                                                                                            max_label + 1 if not has_ignore_label else max_label))
+                                                                                                              max_label + 1 if not has_ignore_label else max_label))
         for orig_label, new_label in mapping.items():
             labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
 
@@ -320,8 +313,10 @@ def main_function(mode="convert_to_hdf5"):
             if has_ignore_label:
                 print("   --> Ignore label {} mapped to label {}".format(IGNORE_LABEL, mapping[IGNORE_LABEL]))
 
-            print("Max label for dataset {}: {}. Total number of out channels/classes for the model: {}".format(data_name, max_label,
-                                                                                                                max_label+1 if not has_ignore_label else max_label))
+            print(
+                "Max label for dataset {}: {}. Total number of out channels/classes for the model: {}".format(data_name,
+                                                                                                              max_label,
+                                                                                                              max_label + 1 if not has_ignore_label else max_label))
             labels_colors = labels_colors.assign(contiguous="")
             for orig_label, new_label in mapping.items():
                 labels_colors.loc[labels_colors['BW'] == orig_label, "contiguous"] = new_label
@@ -338,7 +333,6 @@ def main_function(mode="convert_to_hdf5"):
             combined_raw = ((combined_raw - mean) / std).astype("float16")
             writeHDF5(combined_raw, hdf5_path, "image_normalized")
 
-
         writeHDF5(combined_annotations, hdf5_path, "labels")
 
         # Write csv files:
@@ -347,7 +341,5 @@ def main_function(mode="convert_to_hdf5"):
 
 # main_function("crop_ignore_label")
 main_function()
-
-
 
 #
