@@ -20,18 +20,18 @@ HAS_IGNORE_LABEL = True
 RELABEL_CONSECUTIVE = True
 RELABEL_ALL_DATASETS_CONSISTENTLY = True
 NORMALIZE_RAW = True
-OUT_postfix = "_combined_without_NASA"
+OUT_postfix = "_check_rotate"
 
 # FIXME: At the moment I pad images and annotations with 0 (background). Better approach would be to pad them with ignore
 #      label
 
 datasets = {
-    "HILO": {'root-raw': "UH Hilo -- John Burns",
-             "raw_data_type": "_plot.jpg",
-             'dws_ratio': 3,
-             'root-labels': "recolored_annotations/BW/UH_HILO",
-             "labels_type": "_annotation.png",
-             "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
+    # "HILO": {'root-raw': "UH Hilo -- John Burns",
+    #          "raw_data_type": "_plot.jpg",
+    #          'dws_ratio': 3,
+    #          'root-labels': "recolored_annotations/BW/UH_HILO",
+    #          "labels_type": "_annotation.png",
+    #          "images_info": "/scratch/bailoni/pyCh_repos/coral-data-baseline/data/UH_HILO_species_stats_val_train_test_split.csv"},
     # "sandin": {'root-raw': "Sandin_SIO",
     #          "raw_data_type": ".jpg",
     #          'root-labels': "recolored_annotations/BW/Sandin-SIO", #FIXME: labels are not sharp
@@ -170,12 +170,14 @@ def main_function(mode="convert_to_hdf5"):
                                       enumerate(max_shape)]
                 # Check which one requires less padding:
                 diff, diff_rot = np.array(max_shape_diff).sum(), np.array(max_shape_diff_rot).sum()
-                new_image_data['rotate_image'] = rotate_image = diff_rot < diff
+                new_image_data['rotate_image'] = rotate_image = False
 
-                selected_diff = max_shape_diff_rot if rotate_image else max_shape_diff
+                # selected_diff = max_shape_diff_rot if rotate_image else max_shape_diff
+                selected_diff = max_shape_diff
                 # Now update the maximum shape:
                 max_shape = [dif + max_shp for max_shp, dif in zip(max_shape, selected_diff)]
 
+            print(new_image_data['rotate_image'], file)
             images_collected.append(new_image_data)
 
         if mode == "crop_ignore_label":
